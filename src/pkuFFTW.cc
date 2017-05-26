@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:24 2017 (+0800)
-// Last-Updated: 五 5月 26 22:07:01 2017 (+0800)
+// Last-Updated: 五 5月 26 23:37:45 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 21
+//     Update #: 32
 // URL: http://wuhongyi.cn 
 
 #include "pkuFFTW.hh"
@@ -66,8 +66,6 @@ void fftw1d::ExecuteNormalized(fftw_complex *in, fftw_complex *out)
 	  out[i][1] = out[i][1]/2;
 	}
     }
-
-  
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -153,7 +151,6 @@ void fftw1d_c2r::ExecuteNormalized(fftw_complex *in, double *out)
     {
       out[i] = out[i]/2;
     }
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -165,24 +162,57 @@ corr_fftw::corr_fftw(int n,bool biased)
   Biased = biased;
   
   fft1d = new fftw1d(N2,-1);
+  fft1dback = new fftw1d(N2,+1);
+  
+  signala_ext = Malloc_fftw_complex(N2);
+  signalb_ext = Malloc_fftw_complex(N2);
+  signal_result = Malloc_fftw_complex(N2);
+  outa = Malloc_fftw_complex(N2);
+  outb = Malloc_fftw_complex(N2);
+  out = Malloc_fftw_complex(N2);
 
-
-  // memset(signalb_ext, 0, sizeof(fftw_complex) * N2);
+  outatemp = reinterpret_cast<std::complex<double>*>(outa);
+  outbtemp = reinterpret_cast<std::complex<double>*>(outb);
+  outtemp = reinterpret_cast<std::complex<double>*>(out);
+  scale = 1.0/N2;
   
 }
 
 corr_fftw::~corr_fftw()
 {
   delete fft1d;
-  delete fft1dc2r;
+  delete fft1dback;
+  // delete fft1dc2r;
 
-  
+  Free_fftw_complex(signala_ext);
+  Free_fftw_complex(signalb_ext);
+  Free_fftw_complex(outa);
+  Free_fftw_complex(outb);
+  Free_fftw_complex(out);
 }
 
 void corr_fftw::Execute(fftw_complex *in1, fftw_complex *in2, double *result)
 {
+  memset(signala_ext, 0, sizeof(fftw_complex) * N2);
+  memset(signalb_ext, 0, sizeof(fftw_complex) * N2);
 
+  // zero padding
+  memcpy(signala_ext + (N - 1), in1, sizeof(fftw_complex) * N);
+  memcpy(signalb_ext, in2, sizeof(fftw_complex) * N);
 
+  fft1d->Execute(signala_ext, outa);
+  fft1d->Execute(signalb_ext, outb);
+
+  for (int i = 0; i < N2; ++i)
+    outtemp[i] = outatemp[i] * std::conj(outbtemp[i]) * scale * scale ;
+
+  fft1dback->Execute(out, signal_result);
+
+  for (int i = 0; i < N; ++i)
+    {
+      result[i] = signal_result[N-1-i][0];
+    }
+  
 }
 
 void corr_fftw::Execute(double *in1, double *in2, double *result)
@@ -201,66 +231,6 @@ corr_timedomain::corr_timedomain(bool biased)
 corr_timedomain::~corr_timedomain()
 {
 
-}
-
-template<typename T>
-void corr_timedomain::corr_n_n(int n, T *in1,T *in2,double *out)
-{
-  if(Biased)
-    {
-      for (int i = 0; i < n; ++i)
-	{
-	  out[i] = 0;
-	  for (int j = 0; j <= n-1-i; ++j)
-	    {
-	      out[i] += in1[j]*in2[j+i];
-	    }
-	  out[i] /= n;
-	}
-    }
-  else
-    {
-      for (int i = 0; i < n; ++i)
-	{
-	  out[i] = 0;
-	  for (int j = 0; j <= n-1-i; ++j)
-	    {
-	      out[i] += in1[j]*in2[j+i];
-	    }
-	  out[i] /= n-i;
-	}
-    }
-}
-
-template<typename T>
-void corr_timedomain::corr_n_n2(int n, T *in1,T *in2,double *out)
-{
-  int n2 = 2*n-1;
-
-  if(Biased)
-    {
-      for (int i = 0; i < n2; ++i)
-	{
-	  double sum = 0;
-	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
-	    {
-	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
-	    }
-	  out[i] = sum/n;
-	}
-    }
-  else
-    {
-      for (int i = 0; i < n2; ++i)
-	{
-	  double sum = 0;
-	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
-	    {
-	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
-	    }
-	  out[i] = sum/(n-std::abs(i-(n-1)));
-	}
-    }
 }
 
 

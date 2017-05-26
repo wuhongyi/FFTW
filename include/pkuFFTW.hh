@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:04 2017 (+0800)
-// Last-Updated: 五 5月 26 22:07:01 2017 (+0800)
+// Last-Updated: 五 5月 26 23:33:58 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 20
+//     Update #: 24
 // URL: http://wuhongyi.cn 
 
 #ifndef _PKUFFTW_H_
@@ -118,8 +118,7 @@ public:
   corr_fftw(int n,bool biased = true);
   virtual ~corr_fftw();
 
-  
-  void Execute(fftw_complex *in1, fftw_complex *in2, double *result);// TODO
+  void Execute(fftw_complex *in1, fftw_complex *in2, double *result);//result长度为n
   void Execute(double *in1, double *in2, double *result);// TODO
   
 private:
@@ -128,8 +127,20 @@ private:
   bool Biased;
 
   fftw1d *fft1d;
+  fftw1d *fft1dback;
   fftw1d_c2r *fft1dc2r;
-  
+
+  fftw_complex * signala_ext;
+  fftw_complex * signalb_ext;
+  fftw_complex * signal_result;
+  fftw_complex * outa;
+  fftw_complex * outb;
+  fftw_complex * out;
+
+  std::complex<double> *outatemp;
+  std::complex<double> *outbtemp;
+  std::complex<double> *outtemp;
+  std::complex<double> scale;
 };
 
 
@@ -147,9 +158,7 @@ public:
   template<typename T>
   void corr_n_n2(int n, T *in1,T *in2,double *out);//输出out为2n-1个点
   
-  // 计算稀疏点
-
-  
+  // 计算稀疏点  vector mhit 结构
   // TODO
 
 private:
@@ -165,7 +174,72 @@ public:
   virtual ~conv_fftw();
 
   // TODO
+
+
+  
 };
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+template<typename T>
+void corr_timedomain::corr_n_n(int n, T *in1,T *in2,double *out)
+{
+  if(Biased)
+    {
+      for (int i = 0; i < n; ++i)
+	{
+	  out[i] = 0;
+	  for (int j = 0; j <= n-1-i; ++j)
+	    {
+	      out[i] += in1[j]*in2[j+i];
+	    }
+	  out[i] /= n;
+	}
+    }
+  else
+    {
+      for (int i = 0; i < n; ++i)
+	{
+	  out[i] = 0;
+	  for (int j = 0; j <= n-1-i; ++j)
+	    {
+	      out[i] += in1[j]*in2[j+i];
+	    }
+	  out[i] /= n-i;
+	}
+    }
+}
+
+template<typename T>
+void corr_timedomain::corr_n_n2(int n, T *in1,T *in2,double *out)
+{
+  int n2 = 2*n-1;
+
+  if(Biased)
+    {
+      for (int i = 0; i < n2; ++i)
+	{
+	  double sum = 0;
+	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
+	    {
+	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
+	    }
+	  out[i] = sum/n;
+	}
+    }
+  else
+    {
+      for (int i = 0; i < n2; ++i)
+	{
+	  double sum = 0;
+	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
+	    {
+	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
+	    }
+	  out[i] = sum/(n-std::abs(i-(n-1)));
+	}
+    }
+}
 
 
 
