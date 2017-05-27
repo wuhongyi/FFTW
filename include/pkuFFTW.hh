@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:04 2017 (+0800)
-// Last-Updated: 六 5月 27 11:44:20 2017 (+0800)
+// Last-Updated: 六 5月 27 20:16:11 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 31
+//     Update #: 38
 // URL: http://wuhongyi.cn 
 
 #ifndef _PKUFFTW_H_
@@ -14,6 +14,8 @@
 
 #include <complex>
 #include <fftw3.h>
+#include <vector>
+#include <map>
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 inline fftw_complex* Malloc_fftw_complex(int n)
@@ -70,9 +72,13 @@ public:
   void ExecuteNormalized(fftw_complex *in, fftw_complex *out);//执行变换并归一化获得真实幅值（直流分量没有除以2）
 
   
-  // TODO 正变换添加函数直接得到幅值、相位等
-  void ForwardGetAmplitude(fftw_complex *in,double *out){;}// TODO 
-  void ForwardGetPhase(fftw_complex *in,double *out){;}// TODO 
+  //正变换添加函数直接得到幅值、相位等
+  void ForwardGetAmplitude(fftw_complex *in,double *out);//获得真实幅值
+  void ForwardGetPhase(fftw_complex *in,double *out){;}// TODO
+
+
+private:
+  fftw_complex *outresult;
 };
 
 
@@ -162,8 +168,11 @@ public:
   void corr_n_n2(int n, T *in1,T *in2,double *out);//输出out为2n-1个点
   
   // 计算稀疏点  vector map mhit 结构
-  // TODO
-
+  void corr_n(std::map<int,double> *in1,std::map<int,double> *in2,int n,double *out);//in1 中 int类型数据为bin值，double类型数据为该bin的数值
+  
+  void corr_n(std::vector<int> *in1,std::vector<int> *in2,int n,double *out);//in1 in2 为原始数据，为有计数的bin值，如果同一个bin内有多个事件，则该bin值有多个
+  void corr_n(int n1,int *in1,int n2,int *in2,int n,double *out);
+  
 private:
   bool Biased;
   

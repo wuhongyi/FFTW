@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:24 2017 (+0800)
-// Last-Updated: 六 5月 27 11:14:34 2017 (+0800)
+// Last-Updated: 六 5月 27 20:17:15 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 43
+//     Update #: 58
 // URL: http://wuhongyi.cn 
 
 #include "pkuFFTW.hh"
@@ -30,11 +30,14 @@ fftw1d::fftw1d(int n,int sign,unsigned flags)
 
   Free_fftw_complex(in);
   Free_fftw_complex(out);
+
+
+  outresult = Malloc_fftw_complex(N);
 }
 
 fftw1d::~fftw1d()
 {
-
+  Free_fftw_complex(outresult);
 }
 
 void fftw1d::Execute(fftw_complex *in, fftw_complex *out)
@@ -67,6 +70,25 @@ void fftw1d::ExecuteNormalized(fftw_complex *in, fftw_complex *out)
 	}
     }
 }
+
+void fftw1d::ForwardGetAmplitude(fftw_complex *in,double *out)
+{
+  if(Sign == -1)
+    {
+      if(haveplan) fftw_execute_dft(fftwplan,in,outresult);
+      else std::cout<<"You need fftw_plan first."<<std::endl;
+
+      for (int i = 0; i < N; ++i)
+	{
+	  outresult[i][0] = outresult[i][0]/N*2;
+	  outresult[i][1] = outresult[i][1]/N*2;
+	  out[i] = std::sqrt(outresult[i][0]*outresult[i][0]+outresult[i][1]*outresult[i][1]);
+	}
+      out[0] /= 2.;
+    }
+
+}
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -271,7 +293,69 @@ corr_timedomain::~corr_timedomain()
 
 }
 
+void corr_timedomain::corr_n(std::map<int,double> *in1,std::map<int,double> *in2,int n,double *out)
+{
+  memset(out, 0, sizeof(double) * n);
+  for (std::map<int,double>::iterator it1 = in1->begin(); it1 != in1->end(); ++it1)
+    for (std::map<int,double>::iterator it2 = in2->begin(); it2 != in2->end(); ++it2)
+      {
+	if(it1->first <= it2->first) out[it2->first - it1->first] += it1->second*it2->second;
+      }
 
+  if(Biased)
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n;
+    }
+  else
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n-i;
+    }
+}
+
+void corr_timedomain::corr_n(std::vector<int> *in1,std::vector<int> *in2,int n,double *out)
+{
+  memset(out, 0, sizeof(double) * n);
+  for (unsigned int i = 0; i < in1->size(); ++i)
+    for (unsigned int j = 0; j < in2->size(); ++j)
+      {
+	if(in1->at(i) <= in2->at(j)) out[in2->at(j)-in1->at(i)] += 1;
+      }
+
+  if(Biased)
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n;
+    }
+  else
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n-i;
+    }
+}
+
+void corr_timedomain::corr_n(int n1,int *in1,int n2,int *in2,int n,double *out)
+{
+  memset(out, 0, sizeof(double) * n);
+ 
+  for (int i = 0; i < n1; ++i)
+    for (int j = 0; j < n2; ++j)
+      {
+	if(in1[i]<=in2[j]) out[in2[j]-in1[i]] += 1;
+      }
+
+  if(Biased)
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n;
+    }
+  else
+    {
+      for (int i = 0; i < n; ++i)
+	out[i] /= n-i;
+    }
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

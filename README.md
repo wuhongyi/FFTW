@@ -4,9 +4,9 @@
 ;; Author: Hongyi Wu(吴鸿毅)
 ;; Email: wuhongyi@qq.com 
 ;; Created: 六 5月 27 10:33:41 2017 (+0800)
-;; Last-Updated: 六 5月 27 11:16:51 2017 (+0800)
+;; Last-Updated: 六 5月 27 20:18:36 2017 (+0800)
 ;;           By: Hongyi Wu(吴鸿毅)
-;;     Update #: 1
+;;     Update #: 3
 ;; URL: http://wuhongyi.cn -->
 
 # README
@@ -27,6 +27,8 @@ fftw_complex *in1 = Malloc_fftw_complex(N);//申请一个长度为1024的复数�
 Free_fftw_complex(in1);//不使用的时候通过该方式给释放掉
 ```
 
+----
+
 ```cpp
 // class fftw1d
 
@@ -36,6 +38,8 @@ fftw1d(int n,int sign,unsigned flags = FFTW_MEASURE);// fftw_complex *in, *out;
 //正变换返回值out数据结构具有对称性,因此只需取前一半
 void Execute(fftw_complex *in, fftw_complex *out);//执行变换
 void ExecuteNormalized(fftw_complex *in, fftw_complex *out);//执行变换并归一化获得真实幅值（直流分量没有除以2）
+
+void ForwardGetAmplitude(fftw_complex *in,double *out);//正变换获得真实幅值
 
 
 // 构造函数中，n为变换的点数；sign控制是正变换还是逆变换，其中-1为正变换，+1为逆变换；flags为生成策略，FFTW_MEASURE生成策略可能比较慢，但是执行速度最优，FFTW_ESTIMATE生成策略较快，但是执行速度相对较优。
@@ -56,12 +60,15 @@ fftw1d fft1d(L,-1);
 fft1d.ExecuteNormalized(in,out);
 ```
 
+----
+
 ```cpp
 // class fftw1d_r2c
 // class fftw1d_c2r
 // 以上两个类的使用与fftw1d类似，fftw1d_r2c只能做正变换，fftw1d_c2r只能做逆变换。
 ```
 
+----
 
 ```cpp
 // class corr_fftw   采用fftw的相关计算
@@ -93,6 +100,7 @@ corr_fftw corrfftw2(N,true);
 corrfftw2.Execute(x,y,z);
 ```
 
+----
 
 ```cpp
 // class corr_timedomain
@@ -104,6 +112,14 @@ void corr_n_n(int n, T *in1,T *in2,double *out);//输出out为n个点
 
 template<typename T>
 void corr_n_n2(int n, T *in1,T *in2,double *out);//输出out为2n-1个点
+
+// 计算稀疏点
+void corr_n(std::vector<int> *in1,std::vector<int> *in2,int n,double *out);//in1 in2 为原始数据，为有计数的bin值，如果同一个bin内有多个事件，则该bin值有多个
+void corr_n(int n1,int *in1,int n2,int *in2,int n,double *out);
+// 例如1024个bin数据。其中 bin0=1 bin14=3 bin168=1 bin658=2 bin1011=1
+// 那么in1 中的数据为 0 14 14 14 168 658 658 1011，n1=8
+
+
 
 // 例如
 int N = 1024;
@@ -119,6 +135,7 @@ corrtime.corr_n_n(N,x,y,z);
 
 ```
 
+----
 
 ```cpp
 // class conv_fftw
