@@ -4,9 +4,9 @@
 # Author: Hongyi Wu(吴鸿毅)
 # Email: wuhongyi@qq.com 
 # Created: 六 2月 22 19:39:08 2014 (+0800)
-# Last-Updated: 五 5月 26 17:15:08 2017 (+0800)
+# Last-Updated: 六 5月 27 11:45:48 2017 (+0800)
 #           By: Hongyi Wu(吴鸿毅)
-#     Update #: 89
+#     Update #: 90
 # URL: http://wuhongyi.cn 
 
 #cmake编译、运行程序模板！
@@ -20,19 +20,18 @@ set(PROJ_NAME wu)
 project(${PROJ_NAME})
 
 #判断cmake版本是否符合，对工程命名
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 list( APPEND CMAKE_CXX_FLAGS "-fPIC -O2" )
 list( APPEND CMAKE_LD_FLAGS "-fPIC -O2" )
 # additional packages to be searched for by cmake
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
-#Compile with C++11
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 if (CMAKE_COMPILER_IS_GNUCXX)
 	if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER "4.9")
 		#Make compiler messages nice with colored tags.
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=auto")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	endif()
 
 	if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
@@ -88,7 +87,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build) #生成可执行
 #add_executable()后面的是一个参数列表，可带多个要编译的文件名，中间以空格或回车等隔开。生成一个可执行文件
 add_executable(${PROJ_NAME} main.cc ${sources} ${headers})
 #链接库，后面补上名称
-target_link_libraries(${PROJ_NAME} ${libs} ${ROOT_LIBRARIES} -pthread  m dl -rdynamic )
+target_link_libraries(${PROJ_NAME} ${libs} ${ROOT_LIBRARIES} )
 
 #----------------------------------------------------------------------------
 

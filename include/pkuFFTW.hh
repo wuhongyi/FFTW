@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:04 2017 (+0800)
-// Last-Updated: 五 5月 26 23:33:58 2017 (+0800)
+// Last-Updated: 六 5月 27 11:44:20 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 24
+//     Update #: 31
 // URL: http://wuhongyi.cn 
 
 #ifndef _PKUFFTW_H_
@@ -23,7 +23,8 @@ inline fftw_complex* Malloc_fftw_complex(int n)
 
 inline double* Malloc_fftw_real(int n)
 {
-  return (double*)fftw_alloc_real(n);
+  return (double *)fftw_malloc(sizeof(double) * n);
+  // return (double*)fftw_alloc_real(n);//it need fftw3 version>=3.3-beta1
 }
 
 inline void Free_fftw_complex(fftw_complex* inout)
@@ -65,18 +66,20 @@ public:
   virtual ~fftw1d();
 
   //正变换返回值out数据结构具有对称性,因此只需取前一半
-  void Execute(fftw_complex *in, fftw_complex *out);
-  void ExecuteNormalized(fftw_complex *in, fftw_complex *out);
+  void Execute(fftw_complex *in, fftw_complex *out);//执行变换
+  void ExecuteNormalized(fftw_complex *in, fftw_complex *out);//执行变换并归一化获得真实幅值（直流分量没有除以2）
 
-  // TODO 添加函数直接得到幅值、相位等
-
+  
+  // TODO 正变换添加函数直接得到幅值、相位等
+  void ForwardGetAmplitude(fftw_complex *in,double *out){;}// TODO 
+  void ForwardGetPhase(fftw_complex *in,double *out){;}// TODO 
 };
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 // 实输入数据，复Hermitian输出，正变换。
-// 由于实数据的DFT具有 Hermitian对称性，所以只需要计算n/2+1（向下取整）个输出就可以了。比如对于r2c，输入in有n个数据，输出out有floor(n /2)＋1个数据。
+// 由于实数据的DFT具有 Hermitian对称性，所以只需要计算n/2+1（向下取整）个输出就可以了。比如对于r2c，输入in有n个数据，输出out有floor(n/2)＋1个数据。
 class fftw1d_r2c : public fftwbase
 {
 public:
@@ -115,11 +118,11 @@ public:
 class corr_fftw
 {
 public:
-  corr_fftw(int n,bool biased = true);
+  corr_fftw(int n,bool biased = true);//n为相关计算的点数，biased为true表示有偏，false表示无偏
   virtual ~corr_fftw();
 
   void Execute(fftw_complex *in1, fftw_complex *in2, double *result);//result长度为n
-  void Execute(double *in1, double *in2, double *result);// TODO
+  void Execute(double *in1, double *in2, double *result);//result长度为n 
   
 private:
   int N;
@@ -148,7 +151,7 @@ private:
 class corr_timedomain
 {
 public:
-  corr_timedomain(bool biased = true);
+  corr_timedomain(bool biased = true);//biased为true表示有偏，false表示无偏
   virtual ~corr_timedomain();
 
   // 遍历所有点
@@ -158,7 +161,7 @@ public:
   template<typename T>
   void corr_n_n2(int n, T *in1,T *in2,double *out);//输出out为2n-1个点
   
-  // 计算稀疏点  vector mhit 结构
+  // 计算稀疏点  vector map mhit 结构
   // TODO
 
 private:
@@ -213,16 +216,19 @@ void corr_timedomain::corr_n_n(int n, T *in1,T *in2,double *out)
 template<typename T>
 void corr_timedomain::corr_n_n2(int n, T *in1,T *in2,double *out)
 {
+  // C++98 std::abs 只支持 float、double、long double
+  // C++11 std::abs 扩展了 T
   int n2 = 2*n-1;
 
+  // TODO 应该改成分两段计算速度较快！！！
   if(Biased)
     {
       for (int i = 0; i < n2; ++i)
 	{
 	  double sum = 0;
-	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
+	  for (int j = 0; j <= n-1-int(std::abs(double(i-(n-1)))); ++j)
 	    {
-	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
+	      sum += in1[j]*in2[j+int(std::abs(double(i-(n-1))))];
 	    }
 	  out[i] = sum/n;
 	}
@@ -232,11 +238,11 @@ void corr_timedomain::corr_n_n2(int n, T *in1,T *in2,double *out)
       for (int i = 0; i < n2; ++i)
 	{
 	  double sum = 0;
-	  for (int j = 0; j < n-1-std::abs(i-(n-1)); ++j)
+	  for (int j = 0; j <= n-1-int(std::abs(double(i-(n-1)))); ++j)
 	    {
-	      sum += in1[j]*in2[j+std::abs(i-(n-1))];
+	      sum += in1[j]*in2[j+int(std::abs(double(i-(n-1))))];
 	    }
-	  out[i] = sum/(n-std::abs(i-(n-1)));
+	  out[i] = sum/(n-std::abs(double(i-(n-1))));
 	}
     }
 }

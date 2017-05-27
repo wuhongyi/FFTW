@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 六 5月 13 19:11:24 2017 (+0800)
-// Last-Updated: 五 5月 26 23:37:45 2017 (+0800)
+// Last-Updated: 六 5月 27 11:14:34 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 32
+//     Update #: 43
 // URL: http://wuhongyi.cn 
 
 #include "pkuFFTW.hh"
@@ -55,8 +55,8 @@ void fftw1d::ExecuteNormalized(fftw_complex *in, fftw_complex *out)
 	  out[i][0] = out[i][0]/N*2;
 	  out[i][1] = out[i][1]/N*2;
 	}
-      out[0][0]/=2.;
-      out[0][1]/=2.;
+      // out[0][0]/=2.;
+      // out[0][1]/=2.;
     }
   else
     {
@@ -108,8 +108,8 @@ void fftw1d_r2c::ExecuteNormalized(double *in, fftw_complex *out)
       out[i][0] = out[i][0]/N*2;
       out[i][1] = out[i][1]/N*2;
     }
-  out[0][0]/=2.;
-  out[0][1]/=2.;
+  // out[0][0]/=2.;
+  // out[0][1]/=2.;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -208,17 +208,55 @@ void corr_fftw::Execute(fftw_complex *in1, fftw_complex *in2, double *result)
 
   fft1dback->Execute(out, signal_result);
 
-  for (int i = 0; i < N; ++i)
+  if(Biased)
     {
-      result[i] = signal_result[N-1-i][0];
+      for (int i = 0; i < N; ++i)
+	{
+	  result[i] = signal_result[N-1-i][0]*2;
+	}
     }
-  
+  else
+    {
+      for (int i = 0; i < N; ++i)
+	{
+	  result[i] = signal_result[N-1-i][0]*2*N/(N-i);
+	}
+    }
 }
 
 void corr_fftw::Execute(double *in1, double *in2, double *result)
 {
+  memset(signala_ext, 0, sizeof(fftw_complex) * N2);
+  memset(signalb_ext, 0, sizeof(fftw_complex) * N2);
 
+  for (int i = 0; i < N; ++i)
+    {
+      signala_ext[i+N-1][0] = in1[i];
+      signalb_ext[i][0] = in2[i];
+    }
 
+  fft1d->Execute(signala_ext, outa);
+  fft1d->Execute(signalb_ext, outb);
+
+  for (int i = 0; i < N2; ++i)
+    outtemp[i] = outatemp[i] * std::conj(outbtemp[i]) * scale * scale ;
+
+  fft1dback->Execute(out, signal_result);
+
+  if(Biased)
+    {
+      for (int i = 0; i < N; ++i)
+	{
+	  result[i] = signal_result[N-1-i][0]*2;
+	}
+    }
+  else
+    {
+      for (int i = 0; i < N; ++i)
+	{
+	  result[i] = signal_result[N-1-i][0]*2*N/(N-i);
+	}
+    }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

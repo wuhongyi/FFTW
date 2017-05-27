@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 五 5月 12 20:48:58 2017 (+0800)
-// Last-Updated: 五 5月 26 23:35:08 2017 (+0800)
+// Last-Updated: 六 5月 27 10:31:30 2017 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 45
+//     Update #: 62
 // URL: http://wuhongyi.cn 
 
 #include "pkuFFTW.hh"
@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
   // for (int i = 0; i < L; ++i)
   //   {
   //     data[i] = 5+7*std::cos(2*3.14159*15*(i*T)-30*3.14159/180)+3*std::cos(2*3.14159*40*(i*T)-90*3.14159/180)+gRandom->Uniform();
+  //     // data[i] = 5+7*std::cos(2*3.14159*15*(i*T)-30*3.14159/180);
   //     in[i][0] = data[i];
   //     in[i][1] = 0;
   //   }
@@ -94,6 +95,7 @@ int main(int argc, char *argv[])
   double x[10240];
   double y[10240];
   double z[10240];
+  double Z[10240];
   double zz[10240];
   
   fftw_complex *in1 = Malloc_fftw_complex(N);
@@ -113,6 +115,7 @@ int main(int argc, char *argv[])
   corr_timedomain corrtime(true);
   corr_fftw corrfftw(N,true);
   corrfftw.Execute(in1,in2,zz);
+  // corrfftw.Execute(x,y,zz);
   
   TGraph *gx = new TGraph();
   TGraph *gy = new TGraph();
@@ -132,13 +135,18 @@ int main(int argc, char *argv[])
       std::cout<<z[i]<<"  "<<zz[i]<<std::endl;
     }
 
-  corrtime.corr_n_n2(N,x,y,z);
+  corrtime.corr_n_n2(N,x,y,Z);
   for (int i = -(N-1); i < N; ++i)
     {
-      ggg->SetPoint(i+N-1,i,z[i+N-1]);
+      ggg->SetPoint(i+N-1,i,Z[i+N-1]);
       // gfft->SetPoint(i+N-1,i,out[i+N-1][0]);
     }
 
+for (int i = 0; i < N; ++i)
+  {
+    std::cout<<i <<"  "<<z[i]<<"  "<<Z[i+N-1]<<std::endl;
+  }
+  
   c1->cd(1);
   gx->Draw();
   c1->cd(2);
@@ -152,6 +160,12 @@ int main(int argc, char *argv[])
 
   c1->cd(5);
   gfft->Draw();
+
+  // c1->cd(1);
+  // gg->Draw();
+  // c1->cd(2);
+  // gfft->Draw();
+
   
   c1->Update();
 
