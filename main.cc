@@ -4,9 +4,9 @@
 // Author: Hongyi Wu(吴鸿毅)
 // Email: wuhongyi@qq.com 
 // Created: 五 5月 12 20:48:58 2017 (+0800)
-// Last-Updated: 四 12月 30 18:55:34 2021 (+0800)
+// Last-Updated: 五 12月 31 13:54:22 2021 (+0800)
 //           By: Hongyi Wu(吴鸿毅)
-//     Update #: 97
+//     Update #: 123
 // URL: http://wuhongyi.cn 
 
 // g++ main.cc pkuFFTW.cc `root-config --cflags` -lfftw3 `root-config --glibs` -o 123
@@ -33,15 +33,15 @@ int main(int argc, char *argv[])
   //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
   
   TCanvas *c1 = new TCanvas("c1","",600,400);
-  c1->Divide(2/*col*/,3/*raw*/);
+  c1->Divide(3/*col*/,2/*raw*/);
 
   gRandom->SetSeed(0);
   
-  int Fs = 128;
+  int Fs = 128;//采样率
   double T = 1.0/Fs;
-  int L = 256;
+  int L = 256;//采样点数
 
-  fftw_complex *in,*out;
+  fftw_complex *in,*out;//复数   A[i][0]表示实部，A[i][1]表示虚部。   模表示幅度，相位角表示该幅度的相位
   in = Malloc_fftw_complex(L);
   out = Malloc_fftw_complex(L);
   
@@ -51,9 +51,11 @@ int main(int argc, char *argv[])
   TGraph *gb = new TGraph();
   TGraph *g = new TGraph();
   TGraph *gfft = new TGraph();
-
+  TGraph *gfftused = new TGraph();
+  TGraph *gg = new TGraph();
+  TGraph *ggg = new TGraph();
   
-  for (int i = 0; i < L; ++i)
+  for (int i = 0; i < L; ++i)//构造数据
     {
       aa = 7*std::cos(2*3.14159*15*(i*T)-30*3.14159/180);
       bb= 3*std::cos(2*3.14159*40*(i*T)-90*3.14159/180);
@@ -67,74 +69,95 @@ int main(int argc, char *argv[])
       g->SetPoint(i,i,data[i]);
     }
 
+  // 傅立叶正变换
   fftw1d fft1d(L,-1);
   fft1d.ExecuteNormalized(in,out);
   
 
 
-  
-  for (int i = 0; i < L/2; ++i)
+  //变换之后的
+  for (int i = 0; i < L; ++i)//L/2
     {
       gfft->SetPoint(i,double(Fs)*i/L,std::sqrt(out[i][0]*out[i][0]+out[i][1]*out[i][1]));
       // std::cout<<i<<"  "<<std::sqrt(out[i][0]*out[i][0]+out[i][1]*out[i][1])<<std::endl;
     }
 
-
+  // 由于变换之后的数据点是对称的，只需要一半的数据点即可。即 L/2 点表示 Fs/2 采样率
+  for (int i = 0; i < L/2; ++i)//
+    {
+      gfftused->SetPoint(i,double(Fs)*i/L,std::sqrt(out[i][0]*out[i][0]+out[i][1]*out[i][1]));
+    }
   
 
 
-
+  // 傅立叶逆变换
   fftw1d fft1df(L,1);
   fft1df.ExecuteNormalized(out,in);
 
-
-  TGraph *gg = new TGraph();
   for (int i = 0; i < L; ++i)
     {
       gg->SetPoint(i,i,in[i][0]);
     }
 
-  // out[30][0] = 0;
-  // out[30][1] = 0;
-  // out[0][0] = 0;
-  // out[0][1] = 0;
-  // out[80][0] = 0;
-  // out[80][1] = 0;
 
-  for (int i = 0; i < L; ++i)
-    {
-      if(i < 2) continue;
-      out[i][0] = 0;
-      out[i][1] = 0; 
-    }
+
+  //卡频率
+
+  //卡频谱上第二个峰
+  out[40*2][0] = 0;
+  out[40*2][1] = 0; 
+  out[88*2][0] = 0;
+  out[88*2][1] = 0; 
+
+  //卡频谱上第一个峰
+  // out[15*2][0] = 0;
+  // out[15*2][1] = 0; 
+  // out[113*2][0] = 0;
+  // out[113*2][1] = 0; 
+
+  // 卡低频
+  // out[0][0] = 0;
+  // out[0][1] = 0; 
+
   
   fftw1d fft1dff(L,1);
   fft1dff.ExecuteNormalized(out,in);  
-  TGraph *ggg = new TGraph();
+
   for (int i = 0; i < L; ++i)
     {
       ggg->SetPoint(i,i,in[i][0]);
     }
 
+  // 
   c1->cd(1);
+  ga->SetLineColor(2);
+  gb->SetLineColor(3);
   ga->Draw();
   gb->Draw("same");
 
   
-  
+  // 变换之前的波形
   c1->cd(2);
+  g->SetLineColor(4);
   g->Draw();
 
+  //变换之后的
   c1->cd(3);
   gfft->Draw();
-  
+
   c1->cd(4);
-  gg->Draw();
-  ggg->Draw("same");
+  gfftused->Draw();
+
   
   c1->cd(5);
-  ggg->Draw();
+  gg->SetLineColor(5);
+  gg->Draw("");
+
   
+  c1->cd(6);
+  gg->Draw("");
+  ggg->Draw("same");
+
   c1->Update();
 
   //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
